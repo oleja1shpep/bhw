@@ -83,6 +83,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 64
 * CosineAnnealingLR(T_max = 20)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -103,6 +104,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * CosineAnnealingLR(T_max = 20)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -123,6 +125,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * CosineAnnealingLR(T_max = 10)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -142,6 +145,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * MultiStepLR([10], gamma=0.1)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -164,6 +168,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * MultiStepLR([10, 11], gamma=0.1)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -184,6 +189,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * CosineAnnealingLR(T_max = 20)
+* dropout = 0.4
 * 20 эпох
 
 **Резы**
@@ -205,6 +211,7 @@
 * SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
 * batch_size = 32
 * CosineAnnealingLR(T_max = 30)
+* dropout = 0.6
 * 30 эпох
 
 **Резы**
@@ -217,7 +224,142 @@
 
 Хочу попробовать поменять нормализацию. Я сейчас не учитываю распределение пикселей, просто считаю что они равномерно распределены от 0 до 256, но это не так. По идее разумнее взять дисперсию и среднее
 
+means = (0.5669, 0.5426, 0.4914)
+stds = (0.2377, 0.2326, 0.2506)
+
+Вот такие значения у меня получились, код можно посмотреть в ноутбуке, он закомменчен
 
 
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 30)
+* dropout = 0.6
+* 30 эпох
+
+**Резы**
+* Train: 64.5%
+* Val: 47.2%
+* Test: -
+
+![alt text](image-10.png)
+
+Несмотря на то, что качество на валидации чуть ниже, была эпоха (29-я) когда качество было выше чем в предыдущем эксперименте
+
+![alt text](image-11.png)
 
 
+Добавим аугментацию поворотом картинки на 10 градусов 
+
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+  * RandomApply([RandomAffine(degrees=10)], p=0.6)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 30)
+* dropout = 0.6
+* 30 эпох
+
+**Резы**
+* Train: 60.8%
+* Val: 47.4%
+* Test: -
+
+
+![alt text](image-12.png)
+
+Качество выросло! Добавим еще одну аугментацию - гауссовый блюр
+
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+  * RandomApply([RandomAffine(degrees=10)], p=0.6),
+  * RandomApply([GaussianBlur(3)], p=0.3)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 30)
+* dropout = 0.6
+* 30 эпох
+
+**Резы**
+* Train: 57%
+* Val: 46.3%
+* Test: -
+
+![alt text](image-13.png)
+
+Переобучение уменьшилось, но качество на валидации тоже. Попробуем зафиксировать sigma=0.6
+
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+  * RandomApply([RandomAffine(degrees=10)], p=0.6),
+  * RandomApply([GaussianBlur(3, 0.6)], p=0.3)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 30)
+* dropout = 0.6
+* 30 эпох
+
+**Резы**
+* Train: 58.2%
+* Val: 46.7%
+* Test: -
+
+Качество выросло!
+
+![alt text](image-14.png)
+
+Попробую поставить 40 эпох
+
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+  * RandomApply([RandomAffine(degrees=10)], p=0.6),
+  * RandomApply([GaussianBlur(3, 0.6)], p=0.3)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 40)
+* dropout = 0.6
+* 40 эпох
+
+**Резы**
+* Train: 69.7%
+* Val: 47.2%
+* Test: 44.96%
+
+![alt text](image-15.png)
+
+Качество на тесте выросло, но это потому, что я в test-time augmentation прогонял картинку 10 раз, а не 5
+
+Как мы видим аугментация сделала только хуже и ничего не смогло ей помочь сделать что-то лучше
+
+Попробуем запустить на 40 эпох поставив dropout=0.7
+
+**My efficientnet_v2_s**
+* Аугментации:
+  * RandomHorizontalFlip(0.5)
+  * RandomApply([RandomAffine(degrees=0, translate=(1/8,1/8))], p=0.6)
+  * RandomApply([RandomAffine(degrees=10)], p=0.6)
+* SGD(lr=0.01, momentum=0.9, weight_decay=1e-4, nesterov=True)
+* batch_size = 32
+* CosineAnnealingLR(T_max = 40)
+* dropout = 0.7
+* 40 эпох
+
+**Резы**
+* Train: 67.8%
+* Val: 47.7%
+* Test: 45.74
+
+![alt text](image-16.png)
+
+Все же надо добавить еще аугментаций, чтобы уменьшить переобучение
